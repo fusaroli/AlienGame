@@ -224,6 +224,7 @@ function selectRuleSet(pairId) {
 }
 
 // Improved isDangerous function that uses the actual rule sets
+// Corrected isDangerous function that matches the original Python logic
 function isDangerous(stimulusDigits, ruleNumber, rules) {
   try {
     const rule1 = rules[ruleNumber];
@@ -233,26 +234,28 @@ function isDangerous(stimulusDigits, ruleNumber, rules) {
     // Convert stimulus digits to array of numbers
     const stimulusArray = stimulusDigits.split('').map(Number);
     
-    // Check conditions - a stimulus matches a rule if each digit either
-    // matches the corresponding rule digit or the rule digit is NaN
-    const condition1 = rule1.every((ruleDigit, index) => {
+    // Check if stimulus matches each rule - a match occurs when each digit either:
+    // 1. Matches the rule digit exactly, OR
+    // 2. The rule digit is NaN (wildcard)
+    const matchesRule1 = rule1.every((ruleDigit, index) => {
       return isNaN(ruleDigit) || Math.abs(stimulusArray[index] - ruleDigit) < 0.001;
     });
     
-    const condition2 = rule2.every((ruleDigit, index) => {
+    const matchesRule2 = rule2.every((ruleDigit, index) => {
       return isNaN(ruleDigit) || Math.abs(stimulusArray[index] - ruleDigit) < 0.001;
     });
     
-    const condition3 = rule3.every((ruleDigit, index) => {
+    const matchesRule3 = rule3.every((ruleDigit, index) => {
       return isNaN(ruleDigit) || Math.abs(stimulusArray[index] - ruleDigit) < 0.001;
     });
     
-    // XOR of three conditions (exactly one must be true)
-    // In JavaScript, this is implemented by counting the number of true conditions
-    const trueCount = [condition1, condition2, condition3].filter(Boolean).length;
-    return trueCount === 1;
+    // Apply XOR logic - exactly one of the three rule matches must be true
+    // In JavaScript, we implement XOR (^) for more than two operands by counting
+    // and checking if exactly one is true
+    const matchCount = [matchesRule1, matchesRule2, matchesRule3].filter(Boolean).length;
+    return matchCount === 1;
   } catch (e) {
-    console.error("Error in isDangerous function:", e);
+    console.error("Error in isDangerous function:", e, "Rule number:", ruleNumber);
     return false;
   }
 }
