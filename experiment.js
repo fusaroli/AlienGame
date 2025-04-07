@@ -26,8 +26,32 @@ let ruleStartTime = 0;
 let blockStartTime = 0;
 let pauseStartTime = 0;
 let pauseTime = 0;
+let experimentRules = [];
+let ruleId = '';
 
-// Preload images
+// Generate alien stimuli - 5 digit codes for each trial
+function generateStimulusSet(count) {
+  const stimuli = [];
+  for (let i = 0; i < count; i++) {
+    // Generate a random 5-digit alien code
+    const digits = Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('');
+    // Assign a random "alien type" (1-10) for visual representation
+    const alienType = Math.floor(Math.random() * 10) + 1;
+    
+    stimuli.push({
+      digits: digits,
+      alienType: alienType
+    });
+  }
+  return stimuli;
+}
+
+// Preload images - we'll need to generate or find alien images
+const alienImages = [];
+for (let i = 1; i <= 10; i++) {
+  alienImages.push(`images/alien${i}.png`);
+}
+
 const preload = {
   type: jsPsychPreload,
   images: [
@@ -37,7 +61,8 @@ const preload = {
     'images/failure.png',
     'images/Instructions_Block_One.png',
     'images/Instructions_Block_two.png',
-    'images/Instructions_Block_two_dyad.png'
+    'images/Instructions_Block_two_dyad.png',
+    ...alienImages
   ],
   message: 'Loading experiment resources...',
   show_progress_bar: true,
@@ -129,6 +154,11 @@ const participantInfoForm = {
       TEST_TIME = participantData.testDuration * 60 * 1000;
     }
     
+    // Load the appropriate rule set based on pair ID
+    const ruleSet = selectRuleSet(participantData.pairId);
+    experimentRules = ruleSet.rules;
+    ruleId = ruleSet.ruleId;
+    
     // Set initial rule based on condition and ID
     setInitialRule();
     
@@ -144,16 +174,11 @@ const participantInfoForm = {
         subjectId: participantData.subjectId,
         age: participantData.age,
         gender: participantData.gender
-      }
+      },
+      rule_id: ruleId
     });
   }
 };
-
-// Initialize rules (this would normally load from a file, here we're using a placeholder)
-const rules = [];
-for (let i = 0; i < 20; i++) {
-  rules.push(Array(5).fill(NaN)); // Placeholder rules
-}
 
 // Set initial rule based on condition and participant ID
 function setInitialRule() {
@@ -173,37 +198,6 @@ function setInitialRule() {
   }
 }
 
-// Determine if a stimulus is dangerous according to current rule
-function isDangerous(stimulusDigits, ruleNumber) {
-  try {
-    const rule1 = rules[ruleNumber];
-    const rule2 = rules[ruleNumber + 1];
-    const rule3 = rules[ruleNumber + 2];
-    
-    // Convert stimulus digits to floats
-    const stimulusFloats = stimulusDigits.split('').map(Number);
-    
-    // Check conditions
-    const condition1 = stimulusFloats.every((val, idx) => {
-      return isNaN(rule1[idx]) || Math.abs(val - rule1[idx]) < 0.001;
-    });
-    
-    const condition2 = stimulusFloats.every((val, idx) => {
-      return isNaN(rule2[idx]) || Math.abs(val - rule2[idx]) < 0.001;
-    });
-    
-    const condition3 = stimulusFloats.every((val, idx) => {
-      return isNaN(rule3[idx]) || Math.abs(val - rule3[idx]) < 0.001;
-    });
-    
-    // XOR of three conditions
-    return (condition1 !== condition2 !== condition3) && (condition1 || condition2 || condition3);
-  } catch (e) {
-    console.error("Error in isDangerous function:", e);
-    return false;
-  }
-}
-
 // Instructions screen
 const instructionsScreen = {
   type: jsPsychImageKeyboardResponse,
@@ -213,18 +207,15 @@ const instructionsScreen = {
 };
 
 // Create a trial
-function createTrial(stimulusNumber) {
-  // Generate a random 5-digit "alien code"
-  const stimulusDigits = Array(5).fill(0).map(() => Math.floor(Math.random() * 10)).join('');
-  
+function createTrial(stimulus) {
   return {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: function() {
       let html = `
         <div class="trial-container">
           <div class="alien-container">
-            <img class="alien-stimulus" src="images/alien${stimulusNumber}.png" alt="Alien ${stimulusDigits}">
-            <p>Alien code: ${stimulusDigits}</p>
+            <img class="alien-stimulus" src="images/alien${stimulus.alienType}.png" alt="Alien ${stimulus.digits}">
+            <p>Alien code: ${stimulus.digits}</p>
           </div>
           <div class="response-buttons">
             <button class="response-button ignore-button" onclick="document.dispatchEvent(new KeyboardEvent('keydown', {'key': 'i'}))">Ignore</button>
@@ -260,7 +251,7 @@ function createTrial(stimulusNumber) {
       // Process the response
       if (data.response) {
         const choice = data.response === 'i' ? 'ignore' : 'kill';
-        const isDangerousStimulus = isDangerous(stimulusDigits, currentRule);
+        const isDangerousStimulus = isDangerous(stimulus.digits, currentRule, experimentRules);
         let correct = 0;
         
         if (choice === 'ignore' && !isDangerousStimulus) {
@@ -280,7 +271,7 @@ function createTrial(stimulusNumber) {
         data.block = currentBlock;
         data.rule_number = currentRule > 3 ? Math.floor(currentRule / 3) : `1_${ruleAppend}`;
         data.trial = trialCounter;
-        data.stimulus = stimulusDigits;
+        data.stimulus = stimulus.digits;
         data.choice = choice;
         data.correct = correct;
         data.points = currentPoints;
@@ -311,7 +302,7 @@ function createTrial(stimulusNumber) {
         data.block = currentBlock;
         data.rule_number = currentRule > 3 ? Math.floor(currentRule / 3) : `1_${ruleAppend}`;
         data.trial = trialCounter;
-        data.stimulus = stimulusDigits;
+        data.stimulus = stimulus.digits;
         data.choice = null;
         data.correct = null;
         data.points = currentPoints;
@@ -354,6 +345,8 @@ function showTimeout() {
 
 // Function to handle phase transition
 function showPhaseTransition() {
+  pauseStartTime = Date.now();
+  
   // Show transition message
   const transitionMessage = {
     type: jsPsychHtmlKeyboardResponse,
@@ -382,9 +375,6 @@ function showPhaseTransition() {
     },
     prompt: "<p>Press the spacebar to begin the test phase.</p>",
     choices: [' '],
-    on_start: function() {
-      pauseStartTime = Date.now();
-    },
     on_finish: function() {
       // Reset for test phase
       currentRule = 6;
@@ -404,12 +394,15 @@ function showPhaseTransition() {
 
 // Function to start test phase
 function startTestPhase() {
+  // Generate test stimuli
+  const testStimuli = generateStimulusSet(200); // Generate plenty of stimuli
+  
   // Create timeline with test trials
   const testTrials = [];
   
-  // Generate 100 trials (more than needed)
-  for (let i = 0; i < 100; i++) {
-    testTrials.push(createTrial(i % 10 + 1)); // Using 10 different alien images
+  // Add test trials
+  for (let i = 0; i < testStimuli.length; i++) {
+    testTrials.push(createTrial(testStimuli[i]));
   }
   
   jsPsych.addNodeToEndOfTimeline({
@@ -417,6 +410,7 @@ function startTestPhase() {
   });
 }
 
+// Function to finish experiment
 // Function to finish experiment
 function finishExperiment() {
   const completionScreen = {
@@ -448,6 +442,9 @@ function finishExperiment() {
   jsPsych.addNodeToEndOfTimeline(completionScreen);
 }
 
+// Generate stimuli
+const trainingStimuli = generateStimulusSet(300); // Generate plenty of stimuli
+
 // Create timeline with trials
 const timeline = [];
 timeline.push(preload);
@@ -455,10 +452,15 @@ timeline.push(participantInfoForm);
 timeline.push(instructionsScreen);
 
 // Generate training trials
-for (let i = 0; i < 100; i++) { // More than needed
-  timeline.push(createTrial(i % 10 + 1)); // Using 10 different alien images
+const trainingTrials = [];
+for (let i = 0; i < trainingStimuli.length; i++) {
+  trainingTrials.push(createTrial(trainingStimuli[i]));
 }
+
+// Add training trials to timeline
+timeline.push({
+  timeline: trainingTrials
+});
 
 // Start the experiment
 jsPsych.run(timeline);
-
