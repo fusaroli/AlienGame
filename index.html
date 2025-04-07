@@ -3,17 +3,28 @@
 <head>
     <title>Cognitive Flexibility Experiment</title>
     <meta charset="UTF-8">
-    <!-- jsPsych CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- IMPORTANT: Load jsPsych core library FIRST -->
+    <script src="https://unpkg.com/jspsych@7.3.3/dist/jspsych.js"></script>
+    
+    <!-- Then load the plugins -->
+    <script src="https://unpkg.com/jspsych-plugin-html-keyboard-response@1.1.2/dist/index.js"></script>
+    <script src="https://unpkg.com/jspsych-plugin-html-button-response@1.1.2/dist/index.js"></script>
+    <script src="https://unpkg.com/jspsych-plugin-image-keyboard-response@1.1.2/dist/index.js"></script>
+    <script src="https://unpkg.com/jspsych-plugin-survey@0.2.1/dist/index.js"></script>
+    <script src="https://unpkg.com/jspsych-plugin-preload@1.1.2/dist/index.js"></script>
+    
+    <!-- CSS should come AFTER the library is loaded -->
     <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- The experiment will be initialized here -->
-    <script src="https://unpkg.com/jspsych@7.3.3/dist/jspsych.js"></script>
-    <script src="https://unpkg.com/jspsych-plugin-html-keyboard-response@1.1.2/dist/index.js"></script>
-    <script src="https://unpkg.com/jspsych-plugin-image-keyboard-response@1.1.2/dist/index.js"></script>
-    <script src="https://unpkg.com/jspsych-plugin-survey@0.2.1/dist/index.js"></script>
-    <script src="https://unpkg.com/jspsych-plugin-preload@1.1.2/dist/index.js"></script>
+    <!-- Your experiment will display here -->
+    <div id="jspsych-target"></div>
+    
+    <!-- Load your experiment files LAST -->
+    <script src="rules.js"></script>
     <script src="experiment.js"></script>
 </body>
 </html>
