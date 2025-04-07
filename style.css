@@ -1,0 +1,46 @@
+/* Custom styles for the experiment */
+.jspsych-content {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.alien-stimulus {
+    width: 300px;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.response-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+}
+
+.response-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+    border: none;
+}
+
+.ignore-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.kill-button {
+    background-color: #f44336;
+    color: white;
+}
+
+.feedback {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+
+.points {
+    font-size: 20px;
+    margin-top: 15px;
+}
