@@ -1,5 +1,7 @@
 // Initialize jsPsych
+// Initialize jsPsych
 const jsPsych = initJsPsych({
+  display_element: 'jspsych-target',
   on_finish: function() {
     // Save data to file when experiment is done
     jsPsych.data.displayData();
